@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAIWAN SEMICONDUCTOR MANUFACTUR（2330）股票分析報告 | 2026年05月01日 21:06</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080e18;
+    --card: #131f2e;
+    --border: #2d3f55;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --orange: #fb923c;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --callout-bg: #0f2040;
+    --code-bg: #07111e;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #0d1b2e 0%, #131f2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .stock-title { display: flex; align-items: center; gap: 16px; }
+  .stock-badge {
+    background: var(--accent); color: white;
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 600;
+  }
+  .stock-name { font-size: 26px; font-weight: 700; }
+  .stock-meta { font-size: 13px; color: var(--muted); }
+  .price-area { text-align: right; }
+  .price-main { font-size: 32px; font-weight: 700; }
+  .price-change { font-size: 16px; font-weight: 600; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 900px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+    .price-main { font-size: 24px; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .metric-val {
+    font-size: 24px; font-weight: 700; color: var(--text);
+  }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .score-ring {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px;
+  }
+  .ring-container { position: relative; width: 90px; height: 90px; }
+  .ring-svg { transform: rotate(-90deg); }
+  .ring-text {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px; font-weight: 700; text-align: center;
+  }
+  .ring-label { font-size: 14px; font-weight: 600; }
+  .section-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--text);
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+    margin: 32px 0 16px;
+  }
+  .kv-table { width: 100%; border-collapse: collapse; }
+  .kv-table tr { border-bottom: 1px solid var(--border); }
+  .kv-table tr:last-child { border-bottom: none; }
+  .kv-table td { padding: 8px 4px; font-size: 14px; }
+  .kv-table td:first-child { color: var(--muted); width: 50%; }
+  .kv-table td:last-child { font-weight: 600; text-align: right; }
+  .signal-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .signal-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .signal-positive { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .signal-negative { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .signal-neutral { background: rgba(234,179,8,0.1); color: #fde68a; border: 1px solid rgba(234,179,8,0.2); }
+  .analysis-box {
+    background: var(--callout-bg);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-line;
+    color: #93c5fd;
+    margin-top: 16px;
+  }
+  .chart-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .chart-title {
+    font-size: 14px; font-weight: 600; color: var(--muted);
+    margin-bottom: 16px;
+  }
+  canvas { max-width: 100%; }
+  .inst-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .inst-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .inst-label { width: 40px; color: var(--muted); flex-shrink: 0; }
+  .inst-bar-wrap { flex: 1; height: 16px; background: rgba(45,63,85,0.5); border-radius: 4px; overflow: hidden; position: relative; }
+  .inst-bar { height: 100%; border-radius: 4px; }
+  .inst-val { width: 80px; text-align: right; font-weight: 600; }
+  .overall-card {
+    background: linear-gradient(135deg, var(--card) 0%, #0d1929 100%);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .overall-score-big {
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .overall-info { flex: 1; min-width: 200px; }
+  .overall-label-big { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .overall-desc { font-size: 14px; color: var(--muted); }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.25);
+    margin: 2px;
+  }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 32px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 48px;
+  }
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-inner">
+    <div class="stock-title">
+      <span class="stock-badge">上市</span>
+      <div>
+        <div class="stock-name">TAIWAN SEMICONDUCTOR MANUFACTUR <span style="color:var(--muted);font-size:18px;">（2330）</span></div>
+        <div class="stock-meta">2026年05月01日 21:06 更新 &nbsp;|&nbsp; Semiconductors &nbsp;|&nbsp; Technology</div>
+      </div>
+    </div>
+    <div class="price-area">
+      <div class="price-main">NT$ 2135.0</div>
+      <div class="price-change" style="color:#ef4444">-2.06%</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── 整體評分 ── -->
+  <div class="section-title">整體分析評分</div>
+  <div class="overall-card">
+    <div class="overall-score-big" style="color:#84cc16">74</div>
+    <div class="overall-info">
+      <div class="overall-label-big" style="color:#84cc16">值得關注</div>
+      <div class="overall-desc">基本面 × 0.4 ＋ 籌碼面 × 0.3 ＋ 技術面 × 0.3</div>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div class="score-ring">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 90 90" width="90" height="90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#2d3f55" stroke-width="8"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#22c55e" stroke-width="8"
+            stroke-dasharray="205.3 33.4" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-text" style="color:#22c55e">86</div>
+      </div>
+      <div class="ring-label" style="color:#22c55e">基本面</div>
+    </div>
+      <div class="score-ring">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 90 90" width="90" height="90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#2d3f55" stroke-width="8"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#84cc16" stroke-width="8"
+            stroke-dasharray="148.0 90.7" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-text" style="color:#84cc16">62</div>
+      </div>
+      <div class="ring-label" style="color:#84cc16">籌碼面</div>
+    </div>
+      <div class="score-ring">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 90 90" width="90" height="90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#2d3f55" stroke-width="8"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#22c55e" stroke-width="8"
+            stroke-dasharray="167.1 71.6" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-text" style="color:#22c55e">70</div>
+      </div>
+      <div class="ring-label" style="color:#22c55e">技術面</div>
+    </div>
+    </div>
+  </div>
+
+  <!-- ── 關鍵數字 ── -->
+  <div class="section-title">關鍵數字一覽</div>
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>市值（億）</div>
+      <div class="metric-val">553,648.20億</div>
+      <div class="metric-sub">Market Cap</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>本益比（P/E）</div>
+      <div class="metric-val">28.98</div>
+      <div class="metric-sub">TTM P/E</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>EPS（TTM）</div>
+      <div class="metric-val">NT$73.66</div>
+      <div class="metric-sub">Trailing EPS</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>ROE</div>
+      <div class="metric-val">36.21%</div>
+      <div class="metric-sub">Return on Equity</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>股利殖利率</div>
+      <div class="metric-val">112.00%</div>
+      <div class="metric-sub">Dividend Yield</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>毛利率</div>
+      <div class="metric-val">61.87%</div>
+      <div class="metric-sub">Gross Margin</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>52週高</div>
+      <div class="metric-val">2,330.00</div>
+      <div class="metric-sub">52-Week High</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>52週低</div>
+      <div class="metric-val">911.00</div>
+      <div class="metric-sub">52-Week Low</div>
+    </div>
+  </div>
+
+  <!-- ── 股價走勢圖 ── -->
+  <div class="section-title">股價走勢（近60日）</div>
+  <div class="chart-wrap">
+    <div class="chart-title">收盤價 + 均線（MA5 / MA20 / MA60）+ 布林通道</div>
+    <canvas id="priceChart" height="120"></canvas>
+  </div>
+
+  <!-- ── 成交量 ── -->
+  <div class="chart-wrap">
+    <div class="chart-title">成交量（張）</div>
+    <canvas id="volChart" height="60"></canvas>
+  </div>
+
+  <!-- ── 技術指標圖 ── -->
+  <div class="grid-2">
+    <div class="chart-wrap" style="margin-bottom:0;">
+      <div class="chart-title">RSI（14）</div>
+      <canvas id="rsiChart" height="100"></canvas>
+    </div>
+    <div class="chart-wrap" style="margin-bottom:0;">
+      <div class="chart-title">MACD（12/26/9）</div>
+      <canvas id="macdChart" height="100"></canvas>
+    </div>
+  </div>
+  <div style="margin-bottom:24px;"></div>
+
+  <!-- ── 基本面 ── -->
+  <div class="section-title">基本面分析（Fundamental Analysis）</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>估值指標</div>
+      <table class="kv-table">
+        <tr><td>本益比（P/E）</td><td>28.98倍</td></tr>
+        <tr><td>預估本益比（Forward P/E）</td><td>17.68倍</td></tr>
+        <tr><td>股價淨值比（P/B）</td><td>9.40倍</td></tr>
+        <tr><td>EPS（TTM）</td><td>NT$73.66</td></tr>
+        <tr><td>EPS（預估）</td><td>NT$120.77</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>獲利能力</div>
+      <table class="kv-table">
+        <tr><td>股東權益報酬率（ROE）</td><td>36.21%</td></tr>
+        <tr><td>資產報酬率（ROA）</td><td>17.32%</td></tr>
+        <tr><td>毛利率（Gross Margin）</td><td>61.87%</td></tr>
+        <tr><td>營業利益率（OPM）</td><td>58.10%</td></tr>
+        <tr><td>淨利率（Net Margin）</td><td>46.51%</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>財務結構</div>
+      <table class="kv-table">
+        <tr><td>負債權益比（D/E）</td><td>17.13%</td></tr>
+        <tr><td>流動比率（Current Ratio）</td><td>2.49</td></tr>
+        <tr><td>自由現金流（FCF）</td><td>9,923.80 億</td></tr>
+        <tr><td>市值</td><td>553,648.20 億</td></tr>
+        <tr><td>年度營收</td><td>38,090.50 億</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#a78bfa"></span>成長與股利</div>
+      <table class="kv-table">
+        <tr><td>年營收成長率（YoY）</td><td>31.60%</td></tr>
+        <tr><td>年淨利成長率（YoY）</td><td>46.50%</td></tr>
+        <tr><td>現金股利殖利率</td><td>112.00%</td></tr>
+        <tr><td>每股現金股利</td><td>NT$24.00</td></tr>
+        <tr><td>近3年平均股利</td><td>NT$12.19</td></tr>
+      </table>
+    </div>
+  </div>
+  <ul class="signal-list" style="margin-top:16px;"><li class="signal-item signal-positive">✓ ROE 36.2%，獲利能力優異</li>
+<li class="signal-item signal-positive">✓ 毛利率 61.9%，護城河深厚</li>
+<li class="signal-item signal-positive">✓ 股利殖利率 112.0%，配息吸引力高</li>
+<li class="signal-item signal-positive">✓ 負債權益比 17.1%，財務結構穩健</li>
+<li class="signal-item signal-positive">✓ 年營收成長 31.6%，高速成長</li>
+</ul>
+  <div class="analysis-box">TAIWAN SEMICONDUCTOR MANUFACTUR 基本面評估：
+• 本益比（P/E）28.98倍、股價淨值比（P/B）9.4倍，估值合理
+• 股東權益報酬率（ROE）36.21%，顯示管理層運用資本效率優異
+• 毛利率（Gross Margin）61.87%，具備較深的產品護城河
+• 年度營收年增率（YoY）31.6%，成長動能強勁
+• 現金殖利率（Dividend Yield）112.0%，配息吸引力佳，適合存股族
+• 自由現金流（FCF）約 9923.8 億元，現金流充裕，財務彈性佳</div>
+
+  <!-- ── 籌碼面 ── -->
+  <div class="section-title">籌碼面分析（Chip Analysis）</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>三大法人近20日買賣超（張）</div>
+      <table class="kv-table">
+        <tr><td>外資（Foreign）近5日</td><td style="color:#22c55e">+6,181,282</td></tr>
+        <tr><td>外資（Foreign）近20日</td><td style="color:#22c55e">+6,181,282</td></tr>
+        <tr><td>投信（Trust）近20日</td><td style="color:#22c55e">+0</td></tr>
+        <tr><td>自營商（Dealer）近20日</td><td style="color:#22c55e">+633,380</td></tr>
+        <tr><td>三大合計近20日</td><td style="color:#22c55e"><strong>+9,277,453</strong></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#a78bfa"></span>籌碼動向</div>
+      <table class="kv-table">
+        <tr><td>外資連續動作</td><td><span style="color:#22c55e">連買 1 天</span></td></tr>
+        <tr><td>投信連續動作</td><td>—</td></tr>
+        <tr><td>法人趨勢</td><td><strong>偏多</strong></td></tr>
+        <tr><td>融資餘額（張）</td><td>—</td></tr>
+        <tr><td>融券餘額（張）</td><td>—</td></tr>
+        <tr><td>量能比（5日/20日）</td><td>1.36</td></tr>
+      </table>
+    </div>
+  </div>
+  <!-- 法人走勢圖 -->
+  <div class="chart-wrap">
+    <div class="chart-title">三大法人每日買賣超（近20日）</div>
+    <canvas id="instChart" height="80"></canvas>
+  </div>
+  <ul class="signal-list" style="margin-top:16px;"><li class="signal-item signal-positive">• 外資近20日買超 6,181,282 張，籌碼積極偏多</li>
+</ul>
+  <div class="analysis-box">TAIWAN SEMICONDUCTOR MANUFACTUR 籌碼面評估：
+• 三大法人近20日：外資 +6,181,282 張、投信 +0 張
+• 整體法人趨勢：偏多
+• 外資連續買超 1 天，短線動能偏強
+• 量價分析：量價走勢中性</div>
+
+  <!-- ── 技術面 ── -->
+  <div class="section-title">技術面分析（Technical Analysis）</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>均線指標（Moving Average）</div>
+      <table class="kv-table">
+        <tr><td>現價</td><td><strong>NT$ 2135.0</strong></td></tr>
+        <tr><td>MA5（5日均線）</td><td>2,196.00</td></tr>
+        <tr><td>MA10（10日均線）</td><td>2,121.50</td></tr>
+        <tr><td>MA20（20日均線）</td><td>2,042.75</td></tr>
+        <tr><td>MA60（60日均線）</td><td>1,910.91</td></tr>
+        <tr><td>均線排列</td><td><strong>多頭排列（短均 > 中均 > 長均）</strong></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>震盪指標</div>
+      <table class="kv-table">
+        <tr><td>RSI（14）</td><td>60.26</td></tr>
+        <tr><td>K 值（KD 9,3,3）</td><td>55.78</td></tr>
+        <tr><td>D 值（KD 9,3,3）</td><td>66.74</td></tr>
+        <tr><td>MACD</td><td>82.010</td></tr>
+        <tr><td>MACD Signal</td><td>71.330</td></tr>
+        <tr><td>KD 交叉</td><td>—</td></tr>
+        <tr><td>MACD 交叉</td><td>—</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#a78bfa"></span>布林通道（Bollinger Bands 20,2）</div>
+      <table class="kv-table">
+        <tr><td>上軌（Upper）</td><td>2,283.66</td></tr>
+        <tr><td>中軌（Middle/MA20）</td><td>2,042.75</td></tr>
+        <tr><td>下軌（Lower）</td><td>1,801.84</td></tr>
+        <tr><td>通道寬度（%）</td><td>23.59%</td></tr>
+        <tr><td>位置狀態</td><td>通道中段</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>支撐壓力 &amp; 成交量</div>
+      <table class="kv-table">
+        <tr><td>壓力1</td><td>2,190.00</td></tr>
+        <tr><td>壓力2</td><td>2,210.00</td></tr>
+        <tr><td>支撐1</td><td>2,105.00</td></tr>
+        <tr><td>支撐2</td><td>2,060.00</td></tr>
+        <tr><td>成交量趨勢</td><td>量能溫和放大</td></tr>
+        <tr><td>量能比（5日/20日）</td><td>1.36</td></tr>
+      </table>
+    </div>
+  </div>
+  <ul class="signal-list" style="margin-top:16px;"><li class="signal-item signal-neutral">• RSI 60.3，動能偏強</li>
+<li class="signal-item signal-positive">• MACD 柱狀正值（10.680），多方動能</li>
+<li class="signal-item signal-positive">• 均線多頭排列，趨勢向上</li>
+<li class="signal-item signal-neutral">• 成交量量能溫和放大，留意方向確認</li>
+</ul>
+  <div class="analysis-box">TAIWAN SEMICONDUCTOR MANUFACTUR 技術面評估：
+• 現價 2135.0，站上 20日均線（MA20=2042.75）
+• 60日均線（MA60=1910.91），現價站上長期均線
+• 均線排列：多頭排列（短均 > 中均 > 長均）
+• RSI(14) = 60.3，目前處於中性區
+• KD 指標：K=55.8 / D=66.7，中性水位
+• MACD = 82.010 / Signal = 71.330 
+• 近期支撐：2105.0，壓力：2190.0</div>
+
+  <!-- ── 公司簡介 ── -->
+  <div class="section-title">公司簡介</div>
+<div class="card">
+  <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Technology &gt; Semiconductors<br>員工人數：76,907 人</div>
+  <p style="font-size:14px;line-height:1.8;">Taiwan Semiconductor Manufacturing Company Limited, together with its subsidiaries, manufactures, packages, tests, and sells integrated circuits and other semiconductor devices in Taiwan, China, Europe, the Middle East, Africa, Japan, the United States, and internationally. It provides various wafer fabrication processes, such as processes to manufacture complementary metal- oxide-semiconductor (CMOS) logic, mixed-signal, radio frequency, embedded memory, bipolar CMOS mixed-signal, and others. T</p>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>資料來源：Yahoo Finance、臺灣證券交易所（TWSE）&nbsp;|&nbsp; 產生時間：2026年05月01日 21:06</p>
+  <p style="margin-top:6px;">本報告由 AI 自動分析產生，僅供參考，不構成投資建議。投資有風險，請自行評估。</p>
+</footer>
+
+<script>
+const chartData = {"dates": ["2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30"], "closes": [1764.24, 1749.29, 1774.21, 1814.08, 1799.13, 1769.23, 1759.26, 1794.15, 1779.2, 1759.26, 1774.21, 1809.1, 1873.89, 1908.77, 1893.82, 1958.61, 2008.45, 1988.51, 1968.58, 1928.71, 1858.93, 1893.82, 1883.85, 1804.11, 1843.98, 1933.69, 1878.87, 1858.93, 1839.0, 1870.0, 1905.0, 1850.0, 1840.0, 1810.0, 1810.0, 1845.0, 1840.0, 1820.0, 1780.0, 1760.0, 1855.0, 1810.0, 1860.0, 1950.0, 1955.0, 2000.0, 1990.0, 2055.0, 2080.0, 2085.0, 2030.0, 2025.0, 2050.0, 2050.0, 2080.0, 2185.0, 2265.0, 2215.0, 2180.0, 2135.0], "opens": [1764.24, 1759.26, 1754.28, 1784.18, 1824.05, 1784.18, 1744.31, 1804.11, 1779.2, 1759.26, 1739.33, 1824.05, 1839.0, 1873.89, 1893.82, 1908.77, 1988.51, 1993.5, 1933.69, 1963.59, 1888.84, 1933.69, 1873.89, 1769.23, 1863.92, 1878.87, 1893.82, 1834.02, 1868.9, 1875.0, 1900.0, 1875.0, 1860.0, 1790.0, 1850.0, 1865.0, 1850.0, 1805.0, 1780.0, 1775.0, 1840.0, 1865.0, 1850.0, 1935.0, 1945.0, 1975.0, 1985.0, 2015.0, 2065.0, 2080.0, 2055.0, 2030.0, 2050.0, 2045.0, 2090.0, 2110.0, 2280.0, 2245.0, 2175.0, 2205.0], "highs": [1769.23, 1779.2, 1779.2, 1814.08, 1829.03, 1794.15, 1759.26, 1804.11, 1799.13, 1774.21, 1774.21, 1829.03, 1873.89, 1918.74, 1928.71, 1968.58, 2018.41, 2003.46, 1988.51, 1973.56, 1903.79, 1953.63, 1893.82, 1804.11, 1883.85, 1943.66, 1908.77, 1878.87, 1873.89, 1880.0, 1910.0, 1880.0, 1870.0, 1815.0, 1850.0, 1875.0, 1865.0, 1825.0, 1800.0, 1790.0, 1855.0, 1865.0, 1860.0, 1950.0, 1955.0, 2000.0, 1995.0, 2055.0, 2100.0, 2090.0, 2060.0, 2055.0, 2075.0, 2070.0, 2135.0, 2190.0, 2330.0, 2280.0, 2210.0, 2215.0], "lows": [1744.31, 1749.29, 1749.29, 1784.18, 1794.15, 1769.23, 1739.33, 1779.2, 1769.23, 1754.28, 1734.34, 1809.1, 1834.02, 1868.9, 1893.82, 1908.77, 1988.51, 1988.51, 1933.69, 1928.71, 1858.93, 1888.84, 1873.89, 1764.24, 1824.05, 1868.9, 1878.87, 1834.02, 1839.0, 1860.0, 1890.0, 1850.0, 1840.0, 1785.0, 1800.0, 1845.0, 1840.0, 1800.0, 1780.0, 1760.0, 1830.0, 1805.0, 1835.0, 1925.0, 1930.0, 1970.0, 1975.0, 2010.0, 2060.0, 2055.0, 2030.0, 2025.0, 2045.0, 2040.0, 2055.0, 2105.0, 2265.0, 2215.0, 2165.0, 2135.0], "volumes": [27601167, 22960198, 28985200, 29301156, 32224002, 40825139, 28251381, 26744162, 26952301, 26299986, 33263592, 36529289, 41859169, 40488310, 69816209, 40961679, 40832607, 58561388, 48884884, 43090471, 68160943, 48120463, 30082724, 76459172, 41375691, 36167313, 34040589, 31214304, 31249086, 23812211, 23068156, 31040569, 46312322, 34902948, 27001025, 40964040, 20958470, 28974140, 39889700, 49221091, 35537379, 25132417, 17953562, 46515921, 31835073, 28637625, 28968757, 39113405, 40343568, 32038524, 39260244, 25407621, 25783476, 24762881, 48682193, 45088050, 68696037, 47175356, 42895935, 48975164], "ma5": [null, null, null, null, 1780.19, 1781.19, 1783.18, 1787.17, 1780.19, 1772.22, 1773.21, 1783.18, 1799.13, 1825.05, 1851.96, 1888.84, 1928.71, 1951.63, 1963.59, 1970.57, 1950.64, 1927.71, 1906.78, 1873.89, 1856.94, 1871.89, 1868.9, 1863.92, 1870.9, 1876.1, 1870.36, 1864.59, 1860.8, 1855.0, 1843.0, 1831.0, 1829.0, 1825.0, 1819.0, 1809.0, 1811.0, 1805.0, 1813.0, 1847.0, 1886.0, 1915.0, 1951.0, 1990.0, 2016.0, 2042.0, 2048.0, 2055.0, 2054.0, 2048.0, 2047.0, 2078.0, 2126.0, 2159.0, 2185.0, 2196.0], "ma20": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1843.73, 1848.47, 1855.7, 1861.18, 1860.68, 1862.92, 1871.15, 1877.13, 1880.37, 1883.36, 1888.89, 1895.43, 1897.48, 1895.78, 1890.84, 1886.65, 1880.97, 1872.55, 1864.12, 1854.7, 1846.26, 1846.06, 1841.87, 1840.68, 1847.97, 1853.52, 1856.84, 1862.4, 1872.2, 1884.25, 1895.0, 1901.25, 1910.0, 1920.5, 1932.5, 1946.0, 1963.0, 1984.25, 2004.0, 2024.0, 2042.75], "ma60": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1910.91], "rsi": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, 70.97, 77.34, 80.83, 75.8, 71.05, 62.59, 51.11, 55.51, 54.01, 43.85, 49.02, 58.31, 52.06, 49.97, 47.89, 51.28, 54.85, 48.8, 47.77, 44.71, 44.71, 49.12, 48.52, 46.12, 41.67, 39.61, 51.79, 46.96, 52.28, 60.06, 60.44, 63.83, 62.55, 67.16, 68.75, 69.08, 61.53, 60.88, 62.99, 62.99, 65.57, 72.74, 76.72, 69.86, 65.45, 60.18], "macd": [0.0, -1.19, -0.13, 3.89, 5.8, 4.85, 3.25, 4.74, 4.67, 2.96, 2.79, 5.4, 12.56, 20.8, 25.83, 34.65, 45.13, 51.25, 53.86, 52.11, 44.59, 40.96, 36.86, 26.87, 21.91, 24.94, 22.65, 19.01, 14.35, 13.01, 14.6, 11.29, 7.78, 2.54, -1.59, -2.02, -2.73, -4.85, -9.65, -14.89, -11.25, -11.86, -8.22, 1.91, 10.23, 20.21, 27.01, 37.21, 46.77, 54.13, 54.89, 54.46, 55.5, 55.68, 57.58, 66.79, 79.63, 84.79, 85.07, 80.74], "macd_signal": [0.0, -0.24, -0.22, 0.61, 1.65, 2.29, 2.48, 2.93, 3.28, 3.22, 3.13, 3.59, 5.38, 8.46, 11.94, 16.48, 22.21, 28.02, 33.19, 36.97, 38.49, 38.99, 38.56, 36.22, 33.36, 31.68, 29.87, 27.7, 25.03, 22.62, 21.02, 19.07, 16.81, 13.96, 10.85, 8.28, 6.08, 3.89, 1.18, -2.03, -3.88, -5.47, -6.02, -4.43, -1.5, 2.84, 7.67, 13.58, 20.22, 27.0, 32.58, 36.96, 40.67, 43.67, 46.45, 50.52, 56.34, 62.03, 66.64, 69.46], "macd_hist": [0.0, -0.95, 0.09, 3.29, 4.16, 2.56, 0.77, 1.81, 1.39, -0.25, -0.34, 1.82, 7.18, 12.34, 13.89, 18.17, 22.92, 23.23, 20.67, 15.14, 6.09, 1.97, -1.7, -9.36, -11.45, -6.74, -7.22, -8.69, -10.68, -9.62, -6.42, -7.78, -9.04, -11.42, -12.44, -10.29, -8.8, -8.74, -10.83, -12.86, -7.38, -6.39, -2.19, 6.35, 11.73, 17.37, 19.33, 23.63, 26.55, 27.13, 22.31, 17.51, 14.84, 12.01, 11.13, 16.27, 23.29, 22.76, 18.43, 11.28], "bb_upper": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 2019.75, 2020.53, 2022.27, 2023.63, 2023.8, 2023.69, 2028.53, 2025.44, 2023.79, 2020.25, 2013.01, 2007.29, 2004.06, 2004.99, 2006.33, 2007.64, 1998.34, 1974.58, 1952.79, 1936.43, 1930.61, 1930.31, 1924.44, 1921.36, 1940.28, 1957.44, 1974.8, 1994.37, 2029.74, 2066.09, 2097.54, 2112.61, 2126.84, 2143.33, 2156.12, 2171.08, 2206.56, 2255.24, 2282.07, 2291.57, 2283.66], "bb_lower": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1667.72, 1676.41, 1689.12, 1698.73, 1697.56, 1702.15, 1713.76, 1728.82, 1736.94, 1746.46, 1764.77, 1783.58, 1790.9, 1786.58, 1775.36, 1765.67, 1763.6, 1770.52, 1775.46, 1772.96, 1761.91, 1761.82, 1759.31, 1760.0, 1755.67, 1749.61, 1738.88, 1730.43, 1714.66, 1702.41, 1692.46, 1689.89, 1693.16, 1697.67, 1708.88, 1720.92, 1719.44, 1713.26, 1725.93, 1756.43, 1801.84]};
+const instData = [{"date": "20260401", "foreign_net": 6181282, "trust_net": 0, "dealer_net": 633380, "total_net": 9277453}];
+
+const gridColor = 'rgba(45,63,85,0.5)';
+const textColor = '#94a3b8';
+const baseFont = { family: 'system-ui, sans-serif', size: 11 };
+
+Chart.defaults.color = textColor;
+Chart.defaults.font = baseFont;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+// ── 價格圖 ────────────────────────────────
+if (chartData.dates && chartData.closes) {
+  const priceCtx = document.getElementById('priceChart').getContext('2d');
+  new Chart(priceCtx, {
+    type: 'line',
+    data: {
+      labels: chartData.dates,
+      datasets: [
+        { label: '收盤價', data: chartData.closes, borderColor: '#e2e8f0', borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false, order: 1 },
+        { label: 'MA5', data: chartData.ma5, borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false, borderDash: [] },
+        { label: 'MA20', data: chartData.ma20, borderColor: '#3b82f6', borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false },
+        { label: 'MA60', data: chartData.ma60, borderColor: '#a78bfa', borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false },
+        { label: 'BB上軌', data: chartData.bb_upper, borderColor: 'rgba(251,146,60,0.4)', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false, borderDash: [4,4] },
+        { label: 'BB下軌', data: chartData.bb_lower, borderColor: 'rgba(251,146,60,0.4)', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: '-1', backgroundColor: 'rgba(251,146,60,0.05)', borderDash: [4,4] },
+      ]
+    },
+    options: {
+      responsive: true, interaction: { intersect: false, mode: 'index' },
+      plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.raw?.toFixed(2) ?? '—') } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: gridColor }, position: 'right' }
+      }
+    }
+  });
+}
+
+// ── 成交量圖 ──────────────────────────────
+if (chartData.volumes) {
+  const volCtx = document.getElementById('volChart').getContext('2d');
+  new Chart(volCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.dates,
+      datasets: [{ label: '成交量', data: chartData.volumes, backgroundColor: 'rgba(59,130,246,0.5)', borderColor: 'rgba(59,130,246,0.8)', borderWidth: 1 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: gridColor }, position: 'right', ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } }
+      }
+    }
+  });
+}
+
+// ── RSI 圖 ───────────────────────────────
+if (chartData.rsi && chartData.rsi.some(v => v !== null)) {
+  const rsiCtx = document.getElementById('rsiChart').getContext('2d');
+  new Chart(rsiCtx, {
+    type: 'line',
+    data: {
+      labels: chartData.dates,
+      datasets: [
+        { label: 'RSI(14)', data: chartData.rsi, borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.1 },
+        { label: '超買(70)', data: Array(chartData.dates.length).fill(70), borderColor: 'rgba(239,68,68,0.5)', borderWidth: 1, pointRadius: 0, borderDash: [6,3] },
+        { label: '超賣(30)', data: Array(chartData.dates.length).fill(30), borderColor: 'rgba(34,197,94,0.5)', borderWidth: 1, pointRadius: 0, borderDash: [6,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 8 } },
+        y: { grid: { color: gridColor }, min: 0, max: 100, position: 'right' }
+      }
+    }
+  });
+}
+
+// ── MACD 圖 ──────────────────────────────
+if (chartData.macd && chartData.macd.length) {
+  const macdCtx = document.getElementById('macdChart').getContext('2d');
+  new Chart(macdCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.dates,
+      datasets: [
+        { type: 'bar', label: 'MACD柱', data: chartData.macd_hist, backgroundColor: ctx => (ctx.raw >= 0) ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)', order: 2 },
+        { type: 'line', label: 'MACD', data: chartData.macd, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, fill: false, order: 1 },
+        { type: 'line', label: 'Signal', data: chartData.macd_signal, borderColor: '#f97316', borderWidth: 2, pointRadius: 0, fill: false, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 8 } },
+        y: { grid: { color: gridColor }, position: 'right' }
+      }
+    }
+  });
+}
+
+// ── 法人買賣超圖 ──────────────────────────
+if (instData && instData.length > 0) {
+  const instCtx = document.getElementById('instChart').getContext('2d');
+  const instDates = instData.map(d => d.date || '');
+  const foreignData = instData.map(d => d.foreign_net || 0);
+  const trustData = instData.map(d => d.trust_net || 0);
+  const dealerData = instData.map(d => d.dealer_net || 0);
+  new Chart(instCtx, {
+    type: 'bar',
+    data: {
+      labels: instDates,
+      datasets: [
+        { label: '外資', data: foreignData, backgroundColor: ctx => ctx.raw >= 0 ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)' },
+        { label: '投信', data: trustData, backgroundColor: ctx => ctx.raw >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.5)' },
+        { label: '自營商', data: dealerData, backgroundColor: 'rgba(167,139,250,0.6)' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { stacked: false, grid: { color: gridColor }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: gridColor }, position: 'right',
+             ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v >= -1000 ? (v/-1000).toFixed(0)+'K' : v } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
