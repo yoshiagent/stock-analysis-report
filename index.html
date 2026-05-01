@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台股多Agent分析系統 | 報告入口</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080e18;
+  --card: #131f2e;
+  --border: #2d3f55;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #3b82f6;
+  --green: #22c55e;
+  --orange: #fb923c;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── Hero ── */
+.hero {
+  background: linear-gradient(160deg, #050b14 0%, #0d1929 40%, #0a1525 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 72px 24px 60px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.13), transparent);
+  pointer-events: none;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #93c5fd;
+  font-size: 12px; font-weight: 600;
+  padding: 5px 16px; border-radius: 20px;
+  margin-bottom: 24px; letter-spacing: 0.05em;
+}
+.hero-title {
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: 900;
+  background: linear-gradient(135deg, #e2e8f0 30%, #93c5fd 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px; line-height: 1.15;
+}
+.hero-sub {
+  font-size: 16px; color: var(--muted);
+  max-width: 520px; margin: 0 auto 40px;
+}
+
+/* Agent 流程圖 */
+.flow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; flex-wrap: wrap;
+  max-width: 700px; margin: 0 auto 48px;
+}
+.flow-node {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px;
+}
+.flow-circle {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+  border: 2px solid;
+}
+.flow-arrow {
+  font-size: 18px; color: var(--border);
+  margin: 0 4px; padding-bottom: 20px;
+  flex-shrink: 0;
+}
+.flow-label { font-size: 10px; color: var(--muted); text-align: center; max-width: 60px; }
+.a1 { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.a2 { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); color: #86efac; }
+.a3 { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.4); color: #fdba74; }
+.a4 { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.4); color: #c4b5fd; }
+.a5 { background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.4); color: #f9a8d4; }
+
+/* CTA 按鈕 */
+.cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 28px; border-radius: 12px;
+  font-size: 15px; font-weight: 700;
+  text-decoration: none; cursor: pointer;
+  border: none; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 24px rgba(59,130,246,0.3); }
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── 功能特色 ── */
+.container { max-width: 1100px; margin: 0 auto; padding: 56px 20px; }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 56px;
+}
+.feature-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.feature-card:hover { border-color: rgba(59,130,246,0.4); }
+.feat-icon {
+  font-size: 28px; margin-bottom: 12px;
+  display: block;
+}
+.feat-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ── 最新報告 ── */
+.section-title {
+  font-size: 22px; font-weight: 700;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::before {
+  content: '';
+  width: 4px; height: 22px;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 16px;
+  margin-bottom: 56px;
+}
+.report-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  text-decoration: none; color: var(--text);
+  display: block; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.report-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  opacity: 0; transition: opacity 0.2s;
+}
+.report-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.report-card:hover::before { opacity: 1; }
+.rc-code { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: 0.1em; margin-bottom: 6px; }
+.rc-name { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+.rc-time { font-size: 12px; color: var(--muted); }
+.rc-arrow { position: absolute; right: 20px; bottom: 22px; font-size: 20px; color: var(--border); transition: all 0.2s; }
+.report-card:hover .rc-arrow { color: var(--accent); transform: translateX(4px); }
+
+/* ── 啟動說明 ── */
+.install-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 40px;
+}
+.install-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.steps { display: flex; flex-direction: column; gap: 16px; }
+.step-row {
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #93c5fd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; }
+.step-content p { font-size: 14px; color: var(--text); margin-bottom: 6px; }
+.code-block {
+  background: #07111e;
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 13px;
+  color: #7dd3fc;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  text-align: center;
+  padding: 28px;
+  font-size: 12px; color: var(--muted);
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .flow-arrow { display: none; }
+  .flow { gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="badge">&#9889; AI 驅動 · 多Agent並行 · 自動部署</div>
+  <h1 class="hero-title">台股多Agent<br>智能分析系統</h1>
+  <p class="hero-sub">五大 Agent 並行分析，涵蓋基本面、籌碼面、技術面，
+  自動生成深色主題互動報告並部署至 GitHub Pages</p>
+
+  <!-- Agent 流程 -->
+  <div class="flow">
+    <div class="flow-node">
+      <div class="flow-circle a1">A1</div>
+      <div class="flow-label">數據收集</div>
+    </div>
+    <div class="flow-arrow">&#8250;</div>
+    <div class="flow-node">
+      <div class="flow-circle a2">A2</div>
+      <div class="flow-label">基本面</div>
+    </div>
+    <div class="flow-arrow">&#8250;</div>
+    <div class="flow-node">
+      <div class="flow-circle a3">A3</div>
+      <div class="flow-label">籌碼面</div>
+    </div>
+    <div class="flow-arrow">&#8250;</div>
+    <div class="flow-node">
+      <div class="flow-circle a4">A4</div>
+      <div class="flow-label">技術面</div>
+    </div>
+    <div class="flow-arrow">&#8250;</div>
+    <div class="flow-node">
+      <div class="flow-circle a5">A5</div>
+      <div class="flow-label">報告 + 部署</div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#reports">&#128202; 瀏覽報告</a>
+    <a class="btn btn-outline" href="https://github.com/yoshiagent/stock-analysis-report" target="_blank">&#128279; GitHub 原始碼</a>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 功能特色 -->
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feat-icon">&#128200;</span>
+      <div class="feat-title">技術面分析</div>
+      <div class="feat-desc">MA5/20/60、RSI(14)、MACD(12/26/9)、KD(9,3,3)、布林通道，附互動圖表</div>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">&#127959;</span>
+      <div class="feat-title">基本面分析</div>
+      <div class="feat-desc">P/E、P/B、ROE、毛利率、EPS 趨勢、自由現金流、股利殖利率一覽</div>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">&#127919;</span>
+      <div class="feat-title">籌碼面分析</div>
+      <div class="feat-desc">三大法人買賣超（外資/投信/自營）、融資融券、連續動作天數</div>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">&#9889;</span>
+      <div class="feat-title">多Agent並行</div>
+      <div class="feat-desc">Agent 2/3/4 並行執行，整體分析從啟動到部署完成約 15 秒</div>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">&#127771;</span>
+      <div class="feat-title">護眼深色主題</div>
+      <div class="feat-desc">深海軍藍底色配柔和亮白字，Chart.js 互動圖表，行動裝置友好</div>
+    </div>
+    <div class="feature-card">
+      <span class="feat-icon">&#128640;</span>
+      <div class="feat-title">自動 GitHub 部署</div>
+      <div class="feat-desc">報告生成後自動 git push 到 GitHub Pages，robots.txt 防爬蟲收錄</div>
+    </div>
+  </div>
+
+  <!-- 最新報告 -->
+  <div id="reports" class="section-title">最新分析報告</div>
+  <div id="reportsGrid" class="reports-grid">
+    <!-- 由 JavaScript 動態載入或靜態渲染 -->
+    <div id="reportPlaceholder" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">
+      載入中...
+    </div>
+  </div>
+
+  <!-- 本地啟動說明 -->
+  <div class="section-title">本地啟動 Web Orchestrator</div>
+  <div class="install-box">
+    <div class="steps">
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <p>Clone 專案並安裝套件</p>
+          <div class="code-block">git clone https://github.com/yoshiagent/stock-analysis-report.git<br>cd stock-analysis-report<br>pip install -r requirements.txt</div>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <p>啟動 Web Orchestrator（自動開啟瀏覽器）</p>
+          <div class="code-block">python -X utf8 web_app.py</div>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <p>輸入股票代碼或名稱，一鍵分析</p>
+          <div class="code-block">http://localhost:5001</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>台股多Agent分析系統 &nbsp;|&nbsp; 資料來源：Yahoo Finance、臺灣證券交易所（TWSE）</p>
+  <p style="margin-top:6px;">
+    <a href="https://github.com/yoshiagent/stock-analysis-report" target="_blank">GitHub</a>
+    &nbsp;·&nbsp; 本系統僅供參考，不構成任何投資建議
+  </p>
+</footer>
+
+<script>
+// 嘗試從相對路徑載入各股票子頁面報告清單
+const knownCodes = [];
+document.querySelectorAll('a[data-code]').forEach(a => knownCodes.push(a.dataset.code));
+
+// 動態掃描（若在本地 Flask 環境下有 /api/reports）
+fetch('/api/reports')
+  .then(r => r.json())
+  .then(reports => renderReports(reports))
+  .catch(() => {
+    // 靜態環境：顯示靜態報告清單（由部署腳本注入）
+    const staticReports = window.__REPORTS__ || [];
+    if (staticReports.length > 0) {
+      renderReports(staticReports);
+    } else {
+      document.getElementById('reportPlaceholder').textContent = '尚無報告，請在本地執行分析後部署';
+    }
+  });
+
+function renderReports(reports) {
+  const grid = document.getElementById('reportsGrid');
+  if (!reports || reports.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">尚無報告</div>';
+    return;
+  }
+  grid.innerHTML = reports.map(r => `
+    <a class="report-card" href="${r.url || r.code + '/index.html'}">
+      <div class="rc-code">${r.code}</div>
+      <div class="rc-name">${r.name}</div>
+      <div class="rc-time">${r.updated || ''}</div>
+      <div class="rc-arrow">›</div>
+    </a>
+  `).join('');
+}
+</script>
+
+</body>
+</html>
