@@ -852,7 +852,7 @@ async function fetchFundamentals(code) {
   if (perJson?.status === 200 && perJson.data?.length) {
     const rows = perJson.data.sort((a,b) => b.date.localeCompare(a.date));
     const latest = rows.find(r => r.PER > 0);
-    if (latest) { per = latest.PER; pbr = latest.PBR; divYield = latest.yield; }
+    if (latest) { per = latest.PER ?? null; pbr = latest.PBR ?? null; divYield = latest.yield ?? null; }
   }
 
   let revenues = [];
@@ -876,14 +876,14 @@ function calcFundScore(fund) {
     else if (fund.per < 40) score -= 7;
     else                    score -= 12;
   }
-  if (fund.pbr !== null) {
+  if (fund.pbr != null) {
     if      (fund.pbr < 1.5) score += 8;
     else if (fund.pbr < 2.5) score += 4;
     else if (fund.pbr < 4)   score += 0;
     else if (fund.pbr < 6)   score -= 4;
     else                     score -= 8;
   }
-  if (fund.divYield !== null && fund.divYield >= 0) {
+  if (fund.divYield != null && fund.divYield >= 0) {
     if      (fund.divYield > 6) score += 8;
     else if (fund.divYield > 4) score += 5;
     else if (fund.divYield > 2) score += 2;
@@ -1190,8 +1190,8 @@ function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, f
 
   // 分析摘要
   const labelMap=v=>v>=80?'強力推薦':v>=65?'值得關注':v>=50?'中性觀望':v>=35?'偏弱留意':'高風險';
-  const fundLine = fund.per !== null
-    ? `• PE=${fund.per.toFixed(1)}x，PB=${fund.pbr!==null?fund.pbr.toFixed(2)+'x':'N/A'}，殖利率=${fund.divYield!==null?fund.divYield.toFixed(1)+'%':'N/A'}\n` +
+  const fundLine = fund?.per != null
+    ? `• PE=${fund.per.toFixed(1)}x，PB=${fund.pbr!=null?fund.pbr.toFixed(2)+'x':'N/A'}，殖利率=${fund.divYield!=null?fund.divYield.toFixed(1)+'%':'N/A'}\n` +
       (fund.revenues?.length>=3 ? `• 月營收 ${fund.revenues.slice(-1)[0].revenue>=1e6?(fund.revenues.slice(-1)[0].revenue/1e6).toFixed(0)+'M':(fund.revenues.slice(-1)[0].revenue/1000).toFixed(0)+'K'} 千元，${scores.fLabel}\n` : `• 估值${scores.fLabel}\n`)
     : '• 基本面資料暫無法取得\n';
 
@@ -1220,7 +1220,7 @@ function renderFundamentals(fund, scores) {
   const r2l = v => v !== null ? v.toFixed(2) : '—';
 
   // PE
-  if (fund.per !== null) {
+  if (fund.per != null) {
     setText('mPE', r1l(fund.per) + 'x');
     const peSub = fund.per < 10 ? '極低估' : fund.per < 15 ? '便宜' : fund.per < 20 ? '合理' : fund.per < 30 ? '偏高' : '高估';
     const peColor = fund.per < 15 ? 'var(--green)' : fund.per < 25 ? 'var(--text)' : 'var(--red)';
@@ -1228,7 +1228,7 @@ function renderFundamentals(fund, scores) {
   } else { setText('mPE','N/A'); setText('mPESub','無資料'); }
 
   // PB
-  if (fund.pbr !== null) {
+  if (fund.pbr != null) {
     setText('mPB', r2l(fund.pbr) + 'x');
     const pbSub = fund.pbr < 1 ? '低於淨值' : fund.pbr < 2 ? '偏低' : fund.pbr < 3 ? '合理' : '偏高';
     const pbColor = fund.pbr < 2 ? 'var(--green)' : fund.pbr < 4 ? 'var(--text)' : 'var(--red)';
