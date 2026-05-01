@@ -432,6 +432,11 @@ canvas { display: block; width: 100% !important; }
       <div class="sc-ring"><svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="#2d3f55" stroke-width="7"/><circle id="ringChip" cx="32" cy="32" r="26" fill="none" stroke="#3b82f6" stroke-width="7" stroke-dasharray="0 164" stroke-linecap="round"/></svg><div class="sc-ring-text" id="scoreChipNum">—</div></div>
       <div class="sc-name" id="scoreChipLabel">計算中</div>
     </div>
+    <div class="score-card">
+      <div class="sc-label">基本面</div>
+      <div class="sc-ring"><svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="#2d3f55" stroke-width="7"/><circle id="ringFund" cx="32" cy="32" r="26" fill="none" stroke="#3b82f6" stroke-width="7" stroke-dasharray="0 164" stroke-linecap="round"/></svg><div class="sc-ring-text" id="scoreFundNum">—</div></div>
+      <div class="sc-name" id="scoreFundLabel">計算中</div>
+    </div>
   </div>
 
   <!-- 股價走勢圖 -->
@@ -505,6 +510,37 @@ canvas { display: block; width: 100% !important; }
       <div class="kv-row"><span class="kv-key">支撐 2</span><span class="kv-val" style="color:var(--green)" id="kvS2">—</span></div>
       <div class="kv-row"><span class="kv-key">距52週高</span><span class="kv-val" id="kvFrom52H">—</span></div>
       <div class="kv-row"><span class="kv-key">距52週低</span><span class="kv-val" id="kvFrom52L">—</span></div>
+    </div>
+  </div>
+
+  <!-- 基本面 -->
+  <div class="section">
+    <div class="section-hd">基本面估值</div>
+    <div class="metrics-grid" style="margin-bottom:10px;">
+      <div class="metric-item">
+        <div class="mi-label">本益比（PE）</div>
+        <div class="mi-val" id="mPE">—</div>
+        <div class="mi-sub" id="mPESub">—</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">股淨比（PB）</div>
+        <div class="mi-val" id="mPB">—</div>
+        <div class="mi-sub" id="mPBSub">—</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">殖利率</div>
+        <div class="mi-val" id="mYield">—</div>
+        <div class="mi-sub" id="mYieldSub">—</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">近月營收趨勢</div>
+        <div class="mi-val" id="mRevTrend">—</div>
+        <div class="mi-sub" id="mRevSub">—</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">月營收走勢（千元）</div>
+      <canvas id="revChart" height="100"></canvas>
     </div>
   </div>
 
@@ -586,8 +622,9 @@ async function doAnalyze() {
     const meta = priceData.meta;
     setStep(2, 'done'); setStep(3, 'active');
 
-    // Agent 3: 法人資料（並行）
+    // Agent 3: 法人資料 + 基本面（並行）
     const instPromise = fetchInstitutional(code);
+    const fundPromise = fetchFundamentals(code);
 
     // Agent 4: 技術指標
     setStep(3, 'done'); setStep(4, 'active');
@@ -600,13 +637,16 @@ async function doAnalyze() {
 
     const technicals = calcTechnicals(closes, highs, lows, vols);
 
-    // 等法人資料
-    const instData = await instPromise;
+    // 等法人 + 基本面
+    const [instData, fundData] = await Promise.all([instPromise, fundPromise]);
     setStep(4, 'done'); setStep(5, 'active');
 
     // Agent 5: 產生報告
     const scores = calcScores(technicals, instData);
-    renderReport(meta, closes, highs, lows, vols, dates, technicals, instData, scores, code);
+    const { fScore, fLabel } = calcFundScore(fundData);
+    scores.fScore = fScore; scores.fLabel = fLabel;
+    scores.overall = Math.round(scores.tScore * 0.4 + scores.cScore * 0.3 + fScore * 0.3);
+    renderReport(meta, closes, highs, lows, vols, dates, technicals, instData, fundData, scores, code);
 
     setStep(5, 'done');
     showLoading(false);
@@ -783,6 +823,90 @@ function fmtTWDate(s) {
   // TWSE 日期格式：20260401 → 2026/04/01
   if (!s || s.length < 8) return s;
   return `${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}`;
+}
+
+// ── FinMind 基本面（PE/PB/殖利率 + 月營收）──────────────────
+async function fetchFundamentals(code) {
+  const today = new Date();
+  const perStart = new Date(today); perStart.setMonth(today.getMonth() - 2);
+  const revStart = new Date(today); revStart.setFullYear(today.getFullYear() - 1);
+
+  async function fmGet(dataset, start) {
+    const url = `https://api.finmindtrade.com/api/v4/data?dataset=${dataset}&data_id=${code}&start_date=${start.toISOString().slice(0,10)}`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+    finally { clearTimeout(timer); }
+  }
+
+  const [perJson, revJson] = await Promise.all([
+    fmGet('TaiwanStockPER', perStart),
+    fmGet('TaiwanStockMonthRevenue', revStart),
+  ]);
+
+  let per = null, pbr = null, divYield = null;
+  if (perJson?.status === 200 && perJson.data?.length) {
+    const rows = perJson.data.sort((a,b) => b.date.localeCompare(a.date));
+    const latest = rows.find(r => r.PER > 0);
+    if (latest) { per = latest.PER; pbr = latest.PBR; divYield = latest.yield; }
+  }
+
+  let revenues = [];
+  if (revJson?.status === 200 && revJson.data?.length) {
+    revenues = revJson.data.sort((a,b) => a.date.localeCompare(b.date));
+  }
+
+  return { per, pbr, divYield, revenues };
+}
+
+// ── 基本面評分 ─────────────────────────────────────────────
+function calcFundScore(fund) {
+  if (!fund || (fund.per === null && fund.pbr === null)) return { fScore: 50, fLabel: '資料不足' };
+  let score = 50;
+
+  if (fund.per !== null) {
+    if      (fund.per < 10) score += 10;
+    else if (fund.per < 15) score += 7;
+    else if (fund.per < 20) score += 3;
+    else if (fund.per < 30) score -= 3;
+    else if (fund.per < 40) score -= 7;
+    else                    score -= 12;
+  }
+  if (fund.pbr !== null) {
+    if      (fund.pbr < 1.5) score += 8;
+    else if (fund.pbr < 2.5) score += 4;
+    else if (fund.pbr < 4)   score += 0;
+    else if (fund.pbr < 6)   score -= 4;
+    else                     score -= 8;
+  }
+  if (fund.divYield !== null && fund.divYield >= 0) {
+    if      (fund.divYield > 6) score += 8;
+    else if (fund.divYield > 4) score += 5;
+    else if (fund.divYield > 2) score += 2;
+    else if (fund.divYield > 0) score += 0;
+    else                        score -= 3;
+  }
+  if (fund.revenues?.length >= 6) {
+    const r = fund.revenues;
+    const r3 = r.slice(-3).reduce((a,b) => a + (b.revenue||0), 0);
+    const p3 = r.slice(-6,-3).reduce((a,b) => a + (b.revenue||0), 0);
+    if (p3 > 0) {
+      const g = (r3 - p3) / p3;
+      if      (g > 0.15) score += 7;
+      else if (g > 0.05) score += 4;
+      else if (g > 0)    score += 1;
+      else if (g > -0.1) score -= 2;
+      else               score -= 6;
+    }
+  }
+
+  score = Math.max(10, Math.min(95, Math.round(score)));
+  const fLabel = score >= 80 ? '價值優異' : score >= 65 ? '合理偏優' : score >= 50 ? '中性' : score >= 35 ? '偏貴留意' : '高估風險';
+  return { fScore: score, fLabel };
 }
 
 // ── 技術指標計算 ──────────────────────────────────────────
@@ -977,7 +1101,7 @@ function calcScores(tech, inst) {
 }
 
 // ── 渲染報告 ──────────────────────────────────────────────
-function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, scores, code) {
+function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, fund, scores, code) {
   const cp=tech.cp;
   const prevClose=meta.chartPreviousClose||meta.previousClose;
   const changePct=prevClose ? (cp-prevClose)/prevClose*100 : null;
@@ -1001,6 +1125,7 @@ function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, s
   setRing('ringOverall','scoreOverallNum','scoreOverallLabel',scores.overall);
   setRing('ringTech',   'scoreTechNum',   'scoreTechLabel',   scores.tScore);
   setRing('ringChip',   'scoreChipNum',   'scoreChipLabel',   scores.cScore);
+  setRing('ringFund',   'scoreFundNum',   'scoreFundLabel',   scores.fScore);
 
   // 均線
   setText('kvPrice', 'NT$ '+r2(cp));
@@ -1043,6 +1168,9 @@ function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, s
   setText('kvFrom52L', w52L ? '+'+r1((cp-w52L)/w52L*100)+'%' : '—');
   el('kvFrom52L').style.color='var(--green)';
 
+  // 基本面
+  renderFundamentals(fund, scores);
+
   // 法人表格
   renderInstitutional(inst, scores);
 
@@ -1062,6 +1190,11 @@ function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, s
 
   // 分析摘要
   const labelMap=v=>v>=80?'強力推薦':v>=65?'值得關注':v>=50?'中性觀望':v>=35?'偏弱留意':'高風險';
+  const fundLine = fund.per !== null
+    ? `• PE=${fund.per.toFixed(1)}x，PB=${fund.pbr!==null?fund.pbr.toFixed(2)+'x':'N/A'}，殖利率=${fund.divYield!==null?fund.divYield.toFixed(1)+'%':'N/A'}\n` +
+      (fund.revenues?.length>=3 ? `• 月營收 ${fund.revenues.slice(-1)[0].revenue>=1e6?(fund.revenues.slice(-1)[0].revenue/1e6).toFixed(0)+'M':(fund.revenues.slice(-1)[0].revenue/1000).toFixed(0)+'K'} 千元，${scores.fLabel}\n` : `• 估值${scores.fLabel}\n`)
+    : '• 基本面資料暫無法取得\n';
+
   setText('analysisText',
     `${meta.longName||code} 綜合評分 ${scores.overall}/100（${labelMap(scores.overall)}）\n\n` +
     `【技術面 ${scores.tScore}/100】\n` +
@@ -1074,11 +1207,85 @@ function renderReport(meta, closes, highs, lows, vols, timestamps, tech, inst, s
       `• 外資近期累計：${fmtSigned(inst.reduce((a,b)=>a+b.foreign,0))} 張（最新月 ${fmtSigned(inst[0].foreign)} 張）\n` +
       `• 投信近期累計：${fmtSigned(inst.reduce((a,b)=>a+b.trust,0))} 張\n`
     : '• 法人資料暫無法取得\n') +
-    `\n資料來源：Yahoo Finance + TWSE | ${new Date().toLocaleString('zh-TW')}`
+    `\n【基本面 ${scores.fScore}/100】\n` + fundLine +
+    `\n資料來源：FinMind + TWSE | ${new Date().toLocaleString('zh-TW')}`
   );
 
   // 圖表
   renderCharts(closes, highs, lows, vols, timestamps, tech);
+}
+
+function renderFundamentals(fund, scores) {
+  const r1l = v => v !== null ? v.toFixed(1) : '—';
+  const r2l = v => v !== null ? v.toFixed(2) : '—';
+
+  // PE
+  if (fund.per !== null) {
+    setText('mPE', r1l(fund.per) + 'x');
+    const peSub = fund.per < 10 ? '極低估' : fund.per < 15 ? '便宜' : fund.per < 20 ? '合理' : fund.per < 30 ? '偏高' : '高估';
+    const peColor = fund.per < 15 ? 'var(--green)' : fund.per < 25 ? 'var(--text)' : 'var(--red)';
+    setText('mPESub', peSub); el('mPE').style.color = peColor;
+  } else { setText('mPE','N/A'); setText('mPESub','無資料'); }
+
+  // PB
+  if (fund.pbr !== null) {
+    setText('mPB', r2l(fund.pbr) + 'x');
+    const pbSub = fund.pbr < 1 ? '低於淨值' : fund.pbr < 2 ? '偏低' : fund.pbr < 3 ? '合理' : '偏高';
+    const pbColor = fund.pbr < 2 ? 'var(--green)' : fund.pbr < 4 ? 'var(--text)' : 'var(--red)';
+    setText('mPBSub', pbSub); el('mPB').style.color = pbColor;
+  } else { setText('mPB','N/A'); setText('mPBSub','無資料'); }
+
+  // 殖利率
+  if (fund.divYield !== null) {
+    setText('mYield', r1l(fund.divYield) + '%');
+    const ySub = fund.divYield > 5 ? '高殖利率' : fund.divYield > 3 ? '不錯' : fund.divYield > 1 ? '偏低' : '極低';
+    const yColor = fund.divYield > 4 ? 'var(--green)' : fund.divYield > 2 ? 'var(--text)' : 'var(--muted)';
+    setText('mYieldSub', ySub); el('mYield').style.color = yColor;
+  } else { setText('mYield','N/A'); setText('mYieldSub','無資料'); }
+
+  // 月營收趨勢
+  if (fund.revenues?.length >= 3) {
+    const r = fund.revenues;
+    const latest = r[r.length-1].revenue;
+    const prev   = r[r.length-2].revenue;
+    const growth = prev > 0 ? (latest - prev) / prev * 100 : null;
+    setText('mRevTrend', growth !== null ? (growth >= 0 ? '+' : '') + growth.toFixed(1) + '%' : '—');
+    el('mRevTrend').style.color = growth !== null ? (growth >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text)';
+    const yoy = r.length >= 13 ? r[r.length-13].revenue : null;
+    setText('mRevSub', yoy ? '年增 ' + (yoy>0?(latest-yoy)/yoy*100:0).toFixed(1)+'%' : '月增 vs 上月');
+  } else { setText('mRevTrend','N/A'); setText('mRevSub','無資料'); }
+
+  // 月營收圖表
+  if (fund.revenues?.length >= 3) {
+    const rv = fund.revenues.slice(-13);
+    const labels = rv.map(r => r.date.slice(0,7));
+    const raw    = rv.map(r => r.revenue || 0);
+    const unit   = Math.max(...raw) >= 1e9 ? 1e6 : 1e3;
+    const unitLbl= unit >= 1e6 ? '百萬' : '千';
+    const data   = raw.map(v => Math.round(v / unit));
+    const ctx = el('revChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: data.map((v,i) => i === data.length-1 ? 'rgba(59,130,246,0.85)' : 'rgba(59,130,246,0.35)'),
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw.toLocaleString() + ' ' + unitLbl + '元' } } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: baseFont, maxRotation: 45 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: baseFont, callback: v => v >= 1000 ? (v/1000)+'K' : v } }
+        }
+      }
+    });
+  } else {
+    el('revChart').parentElement.style.display = 'none';
+  }
 }
 
 function renderInstitutional(inst, scores) {
